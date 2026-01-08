@@ -1,12 +1,16 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 from telegram.error import BadRequest
+import os
 
 # ==================== إعدادات ====================
-TOKEN = "8233989883:AAG1GFekQEOq_uhmJWwGvPCV5FXiGQ_f2To"  # غيّره بالتوكن الحقيقي
+TOKEN = os.getenv('8233989883:AAG1GFekQEOq_uhmJWwGvPCV5FXiGQ_f2To')          # ياخذ التوكن من المتغيرات في Render
+ADMIN_ID = int(os.getenv('1490192723'))   # ياخذ الـ ID من المتغيرات في Render
 
-ADMIN_ID = 1490192723  # <--- الـ ID الخاص بك من @userinfobot
-
+if not TOKEN or not ADMIN_ID:
+    print("خطأ: تأكد من إضافة BOT_TOKEN و ADMIN_ID في Environment Variables!")
+    exit(1)
+    
 pending_users = {}
 approved_users = set()
 user_data = {}  # لتخزين بيانات الحساب (عدد المواد، الدرجات، إلخ)
@@ -206,4 +210,5 @@ def main():
     app.run_polling()
 
 if __name__ == "__main__":
+
     main()
