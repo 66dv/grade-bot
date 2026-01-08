@@ -5,7 +5,7 @@ import os
 
 # ==================== إعدادات ====================
 TOKEN = os.getenv('8233989883:AAG1GFekQEOq_uhmJWwGvPCV5FXiGQ_f2To')          # ياخذ التوكن من المتغيرات في Render
-ADMIN_ID = int(os.getenv('1490192723'))   # ياخذ الـ ID من المتغيرات في Render
+ADMIN_ID = int(os.getenv('ADMIN_ID'))
 
 if not TOKEN or not ADMIN_ID:
     print("خطأ: تأكد من إضافة BOT_TOKEN و ADMIN_ID في Environment Variables!")
@@ -212,4 +212,5 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
