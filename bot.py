@@ -4,16 +4,16 @@ from telegram.error import BadRequest
 import os
 
 # ==================== إعدادات ====================
-TOKEN = os.getenv('8233989883:AAG1GFekQEOq_uhmJWwGvPCV5FXiGQ_f2To')          # ياخذ التوكن من المتغيرات في Render
-ADMIN_ID = int(os.getenv('ADMIN_ID'))
+TOKEN = os.getenv('BOT_TOKEN')          # اسم المتغير الصحيح
+ADMIN_ID = int(os.getenv('ADMIN_ID'))   # اسم المتغير الصحيح
 
 if not TOKEN or not ADMIN_ID:
-    print("خطأ: تأكد من إضافة BOT_TOKEN و ADMIN_ID في Environment Variables!")
+    print("خطأ: تأكد من إضافة BOT_TOKEN و ADMIN_ID في Environment Variables في Railway!")
     exit(1)
-    
+
 pending_users = {}
 approved_users = set()
-user_data = {}  # لتخزين بيانات الحساب (عدد المواد، الدرجات، إلخ)
+user_data = {}
 
 print("🚀 البوت شغال كامل مع حساب التقدير!")
 
@@ -103,11 +103,11 @@ async def calc_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode='Markdown'
     )
 
-# ==================== معالجة الرسائل النصية (الأهم!) ====================
+# ==================== معالجة الرسائل النصية ====================
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not is_approved(user_id):
-        return  # يتجاهل غير الموافقين
+        return
 
     text = update.message.text.strip()
 
@@ -136,7 +136,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 state['total'] += grade
 
                 if state['current'] >= state['num_courses']:
-                    # حساب النتيجة النهائية
                     average = state['total'] / state['num_courses']
                     overall = get_overall_grade(average)
 
@@ -154,7 +153,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     result += "\n✨ لحساب جديد: /calc"
 
                     await update.message.reply_text(result, parse_mode='Markdown')
-                    del user_data[user_id]  # تنظيف البيانات
+                    del user_data[user_id]
                 else:
                     state['current'] += 1
                     await update.message.reply_text(f"✅ تم حفظ درجة المادة {state['current']-1}")
@@ -167,7 +166,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except ValueError:
             await update.message.reply_text("❌ أدخل رقم صحيح مثل: 85 أو 92.5")
 
-# ==================== الأزرار (موافقة/رفض) ====================
+# ==================== الأزرار ====================
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -194,7 +193,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(ADMIN_ID, f"⚠️ تم {action} {info['name']} بس ما قدرت أرسل له (حظر البوت)")
 
     await query.edit_message_text(
-        f"{ '✅' if action == 'موافقة' else '❌' } تم {action}:\n{info['name']}\n@{info['username']}\nID: {user_id}"
+        f"{ '✅' if action == "موافقة" else '❌' } تم {action}:\n{info['name']}\n@{info['username']}\nID: {user_id}"
     )
 
 # ==================== تشغيل البوت ====================
@@ -203,14 +202,11 @@ def main():
 
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("calc", calc_command))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # هذا السطر المهم!
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CallbackQueryHandler(button_handler))
 
     print("🤖 البوت شغال كامل الحين مع حساب التقدير ونظام الموافقة!")
     app.run_polling()
 
 if __name__ == "__main__":
-
     main()
-
-
