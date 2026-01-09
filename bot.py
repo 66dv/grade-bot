@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 from telegram.error import BadRequest
 import os
@@ -6,38 +6,38 @@ import os
 # ==================== إعدادات ====================
 TOKEN = os.getenv('BOT_TOKEN')
 ADMIN_ID = int(os.getenv('ADMIN_ID'))
-CHANNEL_USERNAME = '@CDF991' # قناتك
-DEVELOPER_USERNAME = '@cdf99' # معرفك
+CHANNEL_USERNAME = '@CDF991'  # قناتك
+DEVELOPER_USERNAME = '@cdf99'  # معرفك للتواصل
 
 if not TOKEN or not ADMIN_ID:
- print("خطأ: تأكد من إضافة BOT_TOKEN و ADMIN_ID في Environment Variables!")
- exit(1)
+    print("خطأ: تأكد من إضافة BOT_TOKEN و ADMIN_ID في Environment Variables!")
+    exit(1)
 
 pending_users = {}
 approved_users = set()
-banned_users = set() # جديد: المحظورين
+banned_users = set()  # المحظورين
 user_data = {}
 
 print("🚀 البوت شغال مع إجبار الانضمام للقناة وحظر!")
 
 def is_approved(user_id: int) -> bool:
- if user_id in banned_users:
- return False
- return user_id in approved_users or user_id == ADMIN_ID
+    if user_id in banned_users:
+        return False
+    return user_id in approved_users or user_id == ADMIN_ID
 
 def get_overall_grade(average: float) -> str:
- if average >= 90:
- return "امتياز 🏆"
- elif average >= 80:
- return "جيد جداً 🌟"
- elif average >= 70:
- return "جيد 👍"
- elif average >= 60:
- return "متوسط ✅"
- elif average >= 50:
- return "مقبول 📈"
- else:
- return "راسب 😔"
+    if average >= 90:
+        return "امتياز 🏆"
+    elif average >= 80:
+        return "جيد جداً 🌟"
+    elif average >= 70:
+        return "جيد 👍"
+    elif average >= 60:
+        return "متوسط ✅"
+    elif average >= 50:
+        return "مقبول 📈"
+    else:
+        return "راسب 😔"
 
 async def check_membership(context: ContextTypes.DEFAULT_TYPE, user_id: int) -> bool:
     try:
@@ -46,151 +46,218 @@ async def check_membership(context: ContextTypes.DEFAULT_TYPE, user_id: int) -> 
     except BadRequest:
         return False
 
-
-
 # ==================== /start ====================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
- user = update.effective_user
- user_id = user.id
- chat_id = update.effective_chat.id
+    user = update.effective_user
+    user_id = user.id
+    chat_id = update.effective_chat.id
 
- # الرسالة الترحيبية الأولى دائمًا
- welcome_msg = (
- "أهلا بك في بوت حساب التقييم 🎓\n\n"
- "إذا كان هنالك خطأ في عمل البوت، يمكنك التواصل مع المطور من خلال المعرف التالي: @cdf99"
- )
- await update.message.reply_text(welcome_msg)
+    # الرسالة الترحيبية الأولى دائمًا
+    welcome_msg = (
+        "أهلا بك في بوت حساب التقييم 🎓\n\n"
+        "إذا كان هنالك خطأ في عمل البوت، يمكنك التواصل مع المطور من خلال المعرف التالي: @cdf99"
+    )
+    await update.message.reply_text(welcome_msg)
 
- if user_id == ADMIN_ID:
- approved_users.add(ADMIN_ID)
- await update.message.reply_text("👑 يا هلا يا صاحب البوت! البوت شغال 100% 🚀")
- return
+    if user_id == ADMIN_ID:
+        approved_users.add(ADMIN_ID)
+        await update.message.reply_text("👑 يا هلا يا صاحب البوت! البوت شغال 100% 🚀")
+        return
 
- if user_id in banned_users:
- await update.message.reply_text("🚫 أنت محظور من استخدام البوت. تواصل مع @cdf99")
- return
+    if user_id in banned_users:
+        await update.message.reply_text("🚫 أنت محظور من استخدام البوت. تواصل مع @cdf99")
+        return
 
- # تحقق الانضمام للقناة
- if not await check_membership(context, user_id):
- keyboard = [[InlineKeyboardButton("انضم إلى قناة المطور", url=f"https://t.me/CDF991")]]
- reply_markup = InlineKeyboardMarkup(keyboard)
- await update.message.reply_text(
- "⚠️ لاستخدام البوت، يجب عليك الانضمام أولاً إلى قناة المطور:\n@CDF991",
- reply_markup=reply_markup
- )
- return
+    # تحقق الانضمام للقناة
+    if not await check_membership(context, user_id):
+        keyboard = [[InlineKeyboardButton("انضم إلى قناة المطور", url="https://t.me/CDF991")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(
+            "⚠️ لاستخدام البوت، يجب عليك الانضمام أولاً إلى قناة المطور:\n@CDF991",
+            reply_markup=reply_markup
+        )
+        return
 
- if is_approved(user_id):
- await update.message.reply_text("🎓 مرحباً مرة ثانية! اكتب /calc لحساب تقديرك 📚")
- return
+    if is_approved(user_id):
+        await update.message.reply_text("🎓 مرحباً مرة ثانية! اكتب /calc لحساب تقديرك 📚")
+        return
 
- # مستخدم جديد ومنضم → إرسال طلب موافقة
- if user_id not in pending_users:
- pending_users[user_id] = {'name': user.full_name, 'username': user.username or "لا يوجد", 'chat_id': chat_id}
+    # مستخدم جديد ومنضم → إرسال طلب موافقة
+    if user_id not in pending_users:
+        pending_users[user_id] = {
+            'name': user.full_name,
+            'username': user.username or "لا يوجد",
+            'chat_id': chat_id
+        }
 
- keyboard = [
- [InlineKeyboardButton("✅ موافقة", callback_data=f"approve_{user_id}"),
- InlineKeyboardButton("❌ رفض", callback_data=f"reject_{user_id}"),
- InlineKeyboardButton("🚫 حظر", callback_data=f"ban_{user_id}")]
- ]
- reply_markup = InlineKeyboardMarkup(keyboard)
+        keyboard = [
+            [InlineKeyboardButton("✅ موافقة", callback_data=f"approve_{user_id}"),
+             InlineKeyboardButton("❌ رفض", callback_data=f"reject_{user_id}"),
+             InlineKeyboardButton("🚫 حظر", callback_data=f"ban_{user_id}")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
 
- admin_text = f"""
+        admin_text = f"""
 🔔 *طلب جديد للانضمام*
 
 👤 الاسم: {user.full_name}
 @{user.username if user.username else "لا يوجد"}
 🔢 ID: `{user_id}`
- """
+        """
 
- try:
- await context.bot.send_message(ADMIN_ID, admin_text, parse_mode='Markdown', reply_markup=reply_markup)
- except BadRequest:
- print("خطأ في إرسال الإشعار للأدمن")
+        try:
+            await context.bot.send_message(ADMIN_ID, admin_text, parse_mode='Markdown', reply_markup=reply_markup)
+        except BadRequest:
+            print("خطأ في إرسال الإشعار للأدمن")
 
- await update.message.reply_text("⏳ تم إرسال طلبك للموافقة، انتظر الرد قريبًا 🕐")
+    await update.message.reply_text("⏳ تم إرسال طلبك للموافقة، انتظر الرد قريبًا 🕐")
 
-# ==================== /calc و handle_message (مع تحقق الانضمام) ====================
+# ==================== /calc ====================
 async def calc_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
- user_id = update.effective_user.id
- if not is_approved(user_id):
- await update.message.reply_text("🚫 لازم تكون موافق عليك أولاً")
- return
+    user_id = update.effective_user.id
 
- if not await check_membership(context, user_id):
- keyboard = [[InlineKeyboardButton("انضم إلى القناة", url=f"https://t.me/CDF991")]]
- reply_markup = InlineKeyboardMarkup(keyboard)
- await update.message.reply_text(
- "🚫 غادرت القناة! انضم مرة أخرى لاستخدام البوت @CDF991",
- reply_markup=reply_markup
- )
- return
+    if not is_approved(user_id):
+        await update.message.reply_text("🚫 لازم تكون موافق عليك أولاً")
+        return
 
- user_data[user_id] = {'step': 'num_courses', 'current': 1, 'grades': [], 'total': 0.0, 'num_courses': 0}
- await update.message.reply_text("📚 *كم عدد المواد؟*\nأدخل رقم فقط:", parse_mode='Markdown')
+    if not await check_membership(context, user_id):
+        keyboard = [[InlineKeyboardButton("انضم إلى القناة", url="https://t.me/CDF991")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(
+            "🚫 غادرت القناة! انضم مرة أخرى لاستخدام البوت @CDF991",
+            reply_markup=reply_markup
+        )
+        return
 
+    user_data[user_id] = {
+        'step': 'num_courses',
+        'current': 1,
+        'grades': [],
+        'total': 0.0,
+        'num_courses': 0
+    }
+
+    await update.message.reply_text(
+        "📚 *كم عدد المواد هذا الفصل؟*\n\nأدخل رقم فقط (مثال: 6)",
+        parse_mode='Markdown'
+    )
+
+# ==================== معالجة الرسائل النصية ====================
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
- user_id = update.effective_user.id
- if not is_approved(user_id):
- return
+    user_id = update.effective_user.id
 
- if not await check_membership(context, user_id):
- keyboard = [[InlineKeyboardButton("انضم إلى القناة", url=f"https://t.me/CDF991")]]
- reply_markup = InlineKeyboardMarkup(keyboard)
- await update.message.reply_text(
- "🚫 غادرت القناة! انضم مرة أخرى للاستمرار @CDF991",
- reply_markup=reply_markup
- )
- return
+    if not is_approved(user_id):
+        return
 
- text = update.message.text.strip()
- # ... باقي كود الحساب زي ما هو (ما غيرته، يشتغل عادي)
+    if not await check_membership(context, user_id):
+        keyboard = [[InlineKeyboardButton("انضم إلى القناة", url="https://t.me/CDF991")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(
+            "🚫 غادرت القناة! انضم مرة أخرى للاستمرار @CDF991",
+            reply_markup=reply_markup
+        )
+        return
 
-# ==================== معالجة الأزرار (مع حظر ورفع حظر) ====================
+    text = update.message.text.strip()
+
+    if user_id not in user_data:
+        await update.message.reply_text("⚠️ ابدأ من جديد بـ /calc")
+        return
+
+    state = user_data[user_id]
+
+    if state['step'] == 'num_courses':
+        if text.isdigit() and int(text) > 0:
+            state['num_courses'] = int(text)
+            state['step'] = 'enter_grade'
+            await update.message.reply_text(
+                f"📖 *المادة 1 من {state['num_courses']}*\n\nأدخل الدرجة (0-100):",
+                parse_mode='Markdown'
+            )
+        else:
+            await update.message.reply_text("❌ أدخل رقم صحيح أكبر من 0")
+
+    elif state['step'] == 'enter_grade':
+        try:
+            grade = float(text)
+            if 0 <= grade <= 100:
+                state['grades'].append(grade)
+                state['total'] += grade
+
+                if state['current'] >= state['num_courses']:
+                    average = state['total'] / state['num_courses']
+                    overall = get_overall_grade(average)
+
+                    result = f"""
+🎉 *النتيجة جاهزة يا بطل!*
+
+📊 المعدل: *{average:.2f}*
+🏅 التقدير العام: *{overall}*
+
+📋 تفاصيل الدرجات:
+"""
+                    for i, g in enumerate(state['grades'], 1):
+                        result += f"• المادة {i}: {g}\n"
+
+                    result += "\n✨ لحساب جديد: /calc"
+
+                    await update.message.reply_text(result, parse_mode='Markdown')
+                    del user_data[user_id]
+                else:
+                    state['current'] += 1
+                    await update.message.reply_text(f"✅ تم حفظ درجة المادة {state['current']-1}")
+                    await update.message.reply_text(
+                        f"📖 *المادة {state['current']} من {state['num_courses']}*\nأدخل الدرجة:",
+                        parse_mode='Markdown'
+                    )
+            else:
+                await update.message.reply_text("❌ الدرجة لازم تكون بين 0 و 100")
+        except ValueError:
+            await update.message.reply_text("❌ أدخل رقم صحيح مثل: 85 أو 92.5")
+
+# ==================== معالجة الأزرار ====================
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
- query = update.callback_query
- await query.answer()
+    query = update.callback_query
+    await query.answer()
 
- data = query.data
- action, user_id_str = data.split("_", 1)
- user_id = int(user_id_str)
+    data = query.data
+    action = data.split("_")[0]
+    user_id = int(data.split("_")[1])
 
- info = pending_users.get(user_id)
+    info = pending_users.pop(user_id, None)
 
- if action == "approve":
- approved_users.add(user_id)
- pending_users.pop(user_id, None)
- msg = "✅ تمت الموافقة عليك! اكتب /calc"
- elif action == "reject":
- pending_users.pop(user_id, None)
- msg = "❌ تم رفض طلبك"
- elif action == "ban":
- banned_users.add(user_id)
- approved_users.discard(user_id)
- pending_users.pop(user_id, None)
- msg = "🚫 تم حظرك من البوت. تواصل مع @cdf99"
+    if action == "approve":
+        approved_users.add(user_id)
+        user_msg = "✅ *مبروك! تمت الموافقة عليك* 🎉\nتقدر الحين تستخدم البوت كامل\nاكتب /calc عشان تحسب تقديرك"
+    elif action == "reject":
+        user_msg = "❌ عذراً، تم رفض طلبك."
+    elif action == "ban":
+        banned_users.add(user_id)
+        approved_users.discard(user_id)
+        user_msg = "🚫 تم حظرك من استخدام البوت. تواصل مع @cdf99 للاستفسار."
 
- if info:
- try:
- await context.bot.send_message(info['chat_id'], msg)
- except:
- pass
+    if info:
+        try:
+            await context.bot.send_message(info['chat_id'], user_msg, parse_mode='Markdown' if action == "approve" else None)
+        except BadRequest:
+            await context.bot.send_message(ADMIN_ID, f"⚠️ تم {action} {info['name']} بس ما قدرت أرسل له (حظر البوت)")
 
- await query.edit_message_text(f"{action.upper()} تم للمستخدم {user_id}")
+    await query.edit_message_text(
+        f"{ '✅' if action == 'approve' else '❌' if action == 'reject' else '🚫' } تم {action} الطلب:\n"
+        f"{info['name'] if info else ''}\n@{info['username'] if info else ''}\nID: {user_id}"
+    )
 
-# ==================== main ====================
+# ==================== تشغيل البوت ====================
 def main():
- app = Application.builder().token(TOKEN).build()
- app.add_handler(CommandHandler("start", start_command))
- app.add_handler(CommandHandler("calc", calc_command))
- app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
- app.add_handler(CallbackQueryHandler(button_handler))
- app.run_polling()
+    app = Application.builder().token(TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start_command))
+    app.add_handler(CommandHandler("calc", calc_command))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(CallbackQueryHandler(button_handler))
+
+    print("🤖 البوت جاهز وشغال كامل!")
+    app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
- main()
-
-
-
-
-
+    main()
