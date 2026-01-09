@@ -176,8 +176,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text("❌ يرجى رفع صورة فقط لشعار الجامعة.")
 
-    elif state['step'] == 'college_logo':
-        if photo:
+elif state['step'] == 'college_name':
+if photo:
             state['college_logo'] = await photo[-1].get_file()
             state['step'] = 'university_name'
             await update.message.reply_text("🏫 أدخل اسم الجامعة (عربي أو إنجليزي):")
@@ -330,3 +330,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
