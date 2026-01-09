@@ -44,7 +44,7 @@ async def check_membership(context: ContextTypes.DEFAULT_TYPE, user_id: int) -> 
         member = await context.bot.get_chat_member(CHANNEL_USERNAME, user_id)
         return member.status in ['member', 'administrator', 'creator']
     except BadRequest:
-        return Falseمحاذي صح الحين
+        return False
 
 
 
@@ -189,6 +189,7 @@ def main():
 
 if __name__ == "__main__":
  main()
+
 
 
 
