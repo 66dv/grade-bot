@@ -41,10 +41,18 @@ def get_overall_grade(average: float) -> str:
 
 async def check_membership(context: ContextTypes.DEFAULT_TYPE, user_id: int) -> bool:
     try:
+
+
+
+     
         member = await context.bot.get_chat_member(CHANNEL_USERNAME, user_id)
         return member.status in ['member', 'administrator', 'creator']
     except BadRequest:
-        return False  # محاذي صح الحين
+
+
+
+     
+        return Falseمحاذي صح الحين
 
 
 
@@ -189,4 +197,5 @@ def main():
 
 if __name__ == "__main__":
  main()
+
 
