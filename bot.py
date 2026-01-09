@@ -40,11 +40,13 @@ def get_overall_grade(average: float) -> str:
  return "راسب 😔"
 
 async def check_membership(context: ContextTypes.DEFAULT_TYPE, user_id: int) -> bool:
- try:
- member = await context.bot.get_chat_member(CHANNEL_USERNAME, user_id)
- return member.status in ['member', 'administrator', 'creator']
- except BadRequest:
- return False
+    try:
+        member = await context.bot.get_chat_member(CHANNEL_USERNAME, user_id)
+        return member.status in ['member', 'administrator', 'creator']
+    except BadRequest:
+        return False  # محاذي صح الحين
+
+
 
 # ==================== /start ====================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -187,3 +189,4 @@ def main():
 
 if __name__ == "__main__":
  main()
+
