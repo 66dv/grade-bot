@@ -1,4 +1,4 @@
- from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 from telegram.error import BadRequest
 import os
@@ -261,3 +261,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
