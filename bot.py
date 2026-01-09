@@ -5,15 +5,14 @@ import os
 from io import BytesIO
 import matplotlib.pyplot as plt
 from PIL import Image
-from pypdf2 import PdfMerger, PdfReader, PdfWriter
-from pypdf2.generic import NameObject, NumberObject, IndirectObject
+from pypdf import PdfMerger
 
 # ==================== إعدادات ====================
 TOKEN = os.getenv('BOT_TOKEN')
 ADMIN_ID = int(os.getenv('ADMIN_ID'))
-CHANNEL_USERNAME = '@CDF991'  # قناتك
-DEVELOPER_USERNAME = '@cdf99'  # معرفك للتواصل
-TEMPLATE_FILE = 'template.pdf'  # اسم ملف النموذج الثابت
+CHANNEL_USERNAME = '@CDF991'
+DEVELOPER_USERNAME = '@cdf99'
+TEMPLATE_FILE = 'template.pdf'
 
 if not TOKEN or not ADMIN_ID:
     print("خطأ: تأكد من إضافة BOT_TOKEN و ADMIN_ID في Environment Variables!")
@@ -22,8 +21,7 @@ if not TOKEN or not ADMIN_ID:
 pending_users = {}
 approved_users = set()
 banned_users = set()
-user_data = {}  # لبيانات الحساب
-user_report_data = {}  # لبيانات الواجهة
+user_report_data = {}
 template_exists = os.path.exists(TEMPLATE_FILE)
 
 print("🚀 البوت شغال مع إنشاء واجهة تقرير ودمج PDF!")
@@ -54,8 +52,10 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if user_id == ADMIN_ID:
         approved_users.add(ADMIN_ID)
-        keyboard = [[InlineKeyboardButton("رفع نموذج", callback_data="upload_template"),
-                     InlineKeyboardButton("حذف النموذج", callback_data="delete_template")]]
+        keyboard = [
+            [InlineKeyboardButton("رفع نموذج", callback_data="upload_template"),
+             InlineKeyboardButton("حذف النموذج", callback_data="delete_template")]
+        ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text("👑 يا هلا يا صاحب البوت! البوت شغال 100% 🚀\nاستخدم الأزرار لإدارة النموذج:", reply_markup=reply_markup)
         return
@@ -71,7 +71,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if is_approved(user_id):
-        await update.message.reply_text("🎓 مرحباً مرة ثانية! اكتب /report لحساب واجهة تقريرك 📚")
+        await update.message.reply_text("🎓 مرحباً مرة ثانية! اكتب /report لإنشاء واجهة تقريرك 📚")
         return
 
     if user_id not in pending_users:
@@ -103,7 +103,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text("⏳ تم إرسال طلبك للموافقة، انتظر الرد قريبًا 🕐")
 
-# ==================== /report - بدء إنشاء الواجهة ====================
+# ==================== /report ====================
 async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not is_approved(user_id):
@@ -117,7 +117,7 @@ async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if not template_exists:
-        await update.message.reply_text("⚠️ لا يوجد نموذج محمل. تواصل مع المطور @cdf99")
+        await update.message.reply_text("⚠️ لا يوجد نموذج محمل حاليًا. تواصل مع المطور @cdf99")
         return
 
     user_report_data[user_id] = {
@@ -139,7 +139,7 @@ async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text("🖼️ يرجى رفع شعار الجامعة (صورة). أو اضغط تخطي:", reply_markup=reply_markup)
 
-# ==================== معالجة رفع الصور والنصوص ====================
+# ==================== معالجة الرسائل والصور ====================
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not is_approved(user_id):
@@ -157,18 +157,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     state = user_report_data[user_id]
     text = update.message.text if update.message.text else None
-    photo = update.message.photo if update.message.photo else None
+    photo = update.message.photo[-1] if update.message.photo else None
     document = update.message.document if update.message.document else None
 
     if state['step'] == 'university_logo':
-        if photo:
-            state['university_logo'] = await photo[-1].get_file()
-            state['step'] = 'college_logo'
-            keyboard = [[InlineKeyboardButton("تخطي", callback_data="skip_college_logo")]]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            await update.message.reply_text("🖼️ يرجى رفع شعار الكلية (إن وجد). أو اضغط تخطي:", reply_markup=reply_markup)
-        elif document and document.mime_type == 'image/png' or document.mime_type == 'image/jpeg':
-            state['university_logo'] = await document.get_file()
+        if photo or (document and document.mime_type.startswith('image/')):
+            file = photo.get_file() if photo else document.get_file()
+            state['university_logo'] = await file
             state['step'] = 'college_logo'
             keyboard = [[InlineKeyboardButton("تخطي", callback_data="skip_college_logo")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
@@ -176,13 +171,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text("❌ يرجى رفع صورة فقط لشعار الجامعة.")
 
-elif state['step'] == 'college_name':
-if photo:
-            state['college_logo'] = await photo[-1].get_file()
-            state['step'] = 'university_name'
-            await update.message.reply_text("🏫 أدخل اسم الجامعة (عربي أو إنجليزي):")
-        elif document and document.mime_type == 'image/png' or document.mime_type == 'image/jpeg':
-            state['college_logo'] = await document.get_file()
+    elif state['step'] == 'college_logo':
+        if photo or (document and document.mime_type.startswith('image/')):
+            file = photo.get_file() if photo else document.get_file()
+            state['college_logo'] = await file
             state['step'] = 'university_name'
             await update.message.reply_text("🏫 أدخل اسم الجامعة (عربي أو إنجليزي):")
         else:
@@ -193,88 +185,85 @@ if photo:
         state['step'] = 'college_name'
         await update.message.reply_text("🏫 أدخل اسم الكلية (عربي أو إنجليزي):")
 
-    elif state['step'] = 'college_name':
+    elif state['step'] == 'college_name':
         state['college_name'] = text
         state['step'] = 'department_name'
         keyboard = [[InlineKeyboardButton("تخطي", callback_data="skip_department_name")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.message.reply_text("🏫 أدخل اسم القسم العلمي (إن وجد، عربي أو إنجليزي). أو اضغط تخطي:", reply_markup=reply_markup)
+        await update.message.reply_text("🏛️ أدخل اسم القسم العلمي (إن وجد). أو اضغط تخطي:", reply_markup=reply_markup)
 
-    elif state['step'] = 'department_name':
+    elif state['step'] == 'department_name':
         state['department_name'] = text
         state['step'] = 'report_title'
-        await update.message.reply_text("📄 أدخل عنوان التقرير (عربي أو إنجليزي):")
+        await update.message.reply_text("📄 أدخل عنوان التقرير:")
 
-    elif state['step'] = 'report_title':
+    elif state['step'] == 'report_title':
         state['report_title'] = text
         state['step'] = 'student_name'
-        await update.message.reply_text("👨‍🎓 أدخل الاسم الثلاثي (عربي أو إنجليزي):")
+        await update.message.reply_text("👤 أدخل الاسم الثلاثي:")
 
-    elif state['step'] = 'student_name':
+    elif state['step'] == 'student_name':
         state['student_name'] = text
         state['step'] = 'stage'
-        await update.message.reply_text("🎓 أدخل المرحلة (عربي أو إنجليزي):")
+        await update.message.reply_text("🎓 أدخل المرحلة:")
 
-    elif state['step'] = 'stage':
+    elif state['step'] == 'stage':
         state['stage'] = text
         state['step'] = 'group'
         keyboard = [[InlineKeyboardButton("تخطي", callback_data="skip_group")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text("🔤 أدخل حرف الكروب (إن وجد). أو اضغط تخطي:", reply_markup=reply_markup)
 
-    elif state['step'] = 'group':
+    elif state['step'] == 'group':
         state['group'] = text
         state['step'] = 'supervisor'
-        await update.message.reply_text("👨‍🏫 أدخل اسم مشرف الدكتور (عربي أو إنجليزي):")
+        await update.message.reply_text("👨‍🏫 أدخل اسم المشرف (الدكتور):")
 
-    elif state['step'] = 'supervisor':
+    elif state['step'] == 'supervisor':
         state['supervisor'] = text
         state['step'] = 'date'
-        await update.message.reply_text("📅 أدخل تاريخ تقديم التقرير (يوم-شهر-سنة أو سنة فقط، عربي أو إنجليزي):")
+        await update.message.reply_text("📅 أدخل تاريخ التقديم (سنة أو يوم-شهر-سنة):")
 
-    elif state['step'] = 'date':
+    elif state['step'] == 'date':
         state['date'] = text
         await generate_cover(update, context, user_id)
 
+# ==================== إنشاء الواجهة ودمج PDF ====================
 async def generate_cover(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int):
     state = user_report_data[user_id]
 
-    # إنشاء الواجهة باستخدام matplotlib
-    fig, ax = plt.subplots(figsize=(8.5, 11))  # حجم A4
+    fig, ax = plt.subplots(figsize=(8.5, 11))
     ax.axis('off')
 
-    # رفع الشعارات إن وجدت
     if state['university_logo']:
-        uni_logo_bytes = await state['university_logo'].download_as_bytearray()
-        uni_logo = Image.open(BytesIO(uni_logo_bytes))
-        ax.imshow(uni_logo, extent=[6.5, 8, 9, 10])  # أعلى اليمين
+        logo_bytes = await state['university_logo'].download_as_bytearray()
+        logo_img = Image.open(BytesIO(logo_bytes))
+        ax.imshow(logo_img, extent=[6, 8.5, 9, 11], aspect='preserve')
 
     if state['college_logo']:
-        col_logo_bytes = await state['college_logo'].download_as_bytearray()
-        col_logo = Image.open(BytesIO(col_logo_bytes))
-        ax.imshow(col_logo, extent=[0, 1.5, 9, 10])  # أعلى اليسار
+        logo_bytes = await state['college_logo'].download_as_bytearray()
+        logo_img = Image.open(BytesIO(logo_bytes))
+        ax.imshow(logo_img, extent=[0, 2.5, 9, 11], aspect='preserve')
 
-    # النصوص
-    ax.text(4.25, 9.5, state['university_name'], ha='center', va='center', fontsize=16, fontweight='bold')
-    ax.text(4.25, 9.2, state['college_name'], ha='center', va='center', fontsize=14)
+    ax.text(0.5, 0.95, state['university_name'], transform=ax.transAxes, ha='center', fontsize=16, fontweight='bold')
+    ax.text(0.5, 0.9, state['college_name'], transform=ax.transAxes, ha='center', fontsize=14)
     if state['department_name']:
-        ax.text(4.25, 8.9, state['department_name'], ha='center', va='center', fontsize=12)
+        ax.text(0.5, 0.85, state['department_name'], transform=ax.transAxes, ha='center', fontsize=12)
 
-    ax.text(4.25, 6, state['report_title'], ha='center', va='center', fontsize=18, fontweight='bold')
+    ax.text(0.5, 0.6, state['report_title'], transform=ax.transAxes, ha='center', fontsize=18, fontweight='bold')
 
-    ax.text(4.25, 4, state['student_name'], ha='center', va='center', fontsize=14)
-    ax.text(4.25, 3.7, state['stage'], ha='center', va='center', fontsize=12)
+    ax.text(0.5, 0.4, state['student_name'], transform=ax.transAxes, ha='center', fontsize=14)
+    ax.text(0.5, 0.35, f"المرحلة: {state['stage']}", transform=ax.transAxes, ha='center', fontsize=12)
     if state['group']:
-        ax.text(4.25, 3.4, state['group'], ha='center', va='center', fontsize=12)
-    ax.text(4.25, 3.1, state['supervisor'], ha='center', va='center', fontsize=12)
-    ax.text(4.25, 2.8, state['date'], ha='center', va='center', fontsize=12)
+        ax.text(0.5, 0.3, f"الكروب: {state['group']}", transform=ax.transAxes, ha='center', fontsize=12)
+    ax.text(0.5, 0.25, f"إشراف: {state['supervisor']}", transform=ax.transAxes, ha='center', fontsize=12)
+    ax.text(0.5, 0.2, f"التاريخ: {state['date']}", transform=ax.transAxes, ha='center', fontsize=12)
 
-    # حفظ الواجهة كPDF
     cover_buffer = BytesIO()
-    fig.savefig(cover_buffer, format='pdf', bbox_inches='tight')
+    fig.savefig(cover_buffer, format='pdf', bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
     cover_buffer.seek(0)
 
-    # دمج مع النموذج
     merger = PdfMerger()
     merger.append(TEMPLATE_FILE)
     merger.append(cover_buffer)
@@ -283,15 +272,16 @@ async def generate_cover(update: Update, context: ContextTypes.DEFAULT_TYPE, use
     merger.close()
     output_buffer.seek(0)
 
-    await context.bot.send_document(user_id, output_buffer, filename="cover.pdf")
+    await context.bot.send_document(chat_id=user_id, document=output_buffer, filename="واجهة_التقرير.pdf", caption="✅ تم إنشاء الواجهة بنجاح!")
 
     keyboard = [
-        [InlineKeyboardButton("✅ دمج مع التقرير", callback_data="merge_report")],
-        [InlineKeyboardButton("❌ لا شكراً", callback_data="no_merge")]
+        [InlineKeyboardButton("نعم، دمج مع التقرير", callback_data="merge_report"),
+         InlineKeyboardButton("لا شكراً", callback_data="no_merge")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text("✅ تم إنشاء الواجهة! هل تريد دمجها مع تقريرك؟", reply_markup=reply_markup)
-    del user_report_data[user_id]  # تنظيف بعد الإنشاء
+    await update.message.reply_text("هل تريد دمج الواجهة مع ملف التقرير الكامل؟", reply_markup=reply_markup)
+
+    del user_report_data[user_id]
 
 # ==================== معالجة الأزرار ====================
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -302,18 +292,18 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
 
     if data.startswith("skip_"):
-        step = data.split("_")[1]
-        user_report_data[user_id]['step'] = step.replace("skip_", "")
-        await update.message.reply_text("✅ تم التخطي، أدخل التالي:")
+        skip_step = data[5:]
+        user_report_data[user_id]['step'] = skip_step.replace("skip_", "")
+        await query.edit_message_text("✅ تم التخطي، تابع الخطوة التالية.")
 
     elif data == "merge_report":
-        user_report_data[user_id] = {'step': 'upload_report'}
-        await query.edit_message_text("🗂️ يرجى رفع التقرير (PDF) للدمج.")
+        user_report_data[user_id] = {'step': 'upload_report', 'cover_buffer': None}
+        await query.edit_message_text("🗂️ ارفع ملف التقرير الكامل (PDF) للدمج مع الواجهة.")
 
     elif data == "no_merge":
-        await query.edit_message_text("✅ تم، شكرًا لاستخدام البوت!")
+        await query.edit_message_text("✅ تمام، شكراً لاستخدام البوت!")
 
-    # باقي الكود للموافقة، حظر، إلخ
+    # معالجة طلبات الموافقة والحظر (زي ما كان)
 
 # ==================== main ====================
 def main():
@@ -325,9 +315,8 @@ def main():
     app.add_handler(MessageHandler(filters.PHOTO | filters.DOCUMENT, handle_message))
     app.add_handler(CallbackQueryHandler(button_handler))
 
-    print("🤖 البوت جاهز لإنشاء واجهات التقارير!")
+    print("🤖 البوت جاهز لإنشاء واجهات تقارير جامعية!")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
-
